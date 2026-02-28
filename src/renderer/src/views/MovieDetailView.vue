@@ -112,11 +112,17 @@ function getActorThumb(thumb: string): string {
           background: #0a0a0a;
         "
       >
-        <img
-          :src="fanartSrc"
-          style="width: 100%; height: 100%; object-fit: cover; opacity: 0.4"
+        <img :src="fanartSrc" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.4" />
+        <div
+          style="
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 100px;
+            background: linear-gradient(transparent, #18181c);
+          "
         />
-        <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 100px; background: linear-gradient(transparent, #18181c)" />
       </div>
 
       <div style="display: flex; gap: 24px; flex-wrap: wrap">
@@ -126,9 +132,21 @@ function getActorThumb(thumb: string): string {
             v-if="posterSrc"
             :src="posterSrc"
             :alt="movie.title"
-            style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.5)"
+            style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5)"
           />
-          <div v-else style="width: 250px; height: 375px; background: #1a1a2e; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 60px">
+          <div
+            v-else
+            style="
+              width: 250px;
+              height: 375px;
+              background: #1a1a2e;
+              border-radius: 8px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 60px;
+            "
+          >
             🎬
           </div>
         </div>
@@ -137,7 +155,11 @@ function getActorThumb(thumb: string): string {
         <div style="flex: 1; min-width: 300px">
           <NButton text style="margin-bottom: 8px" @click="router.back()">← 返回</NButton>
           <NH2 style="margin: 0 0 4px 0">{{ movie.title }}</NH2>
-          <NText v-if="movie.original_title && movie.original_title !== movie.title" depth="3" style="display: block; margin-bottom: 12px">
+          <NText
+            v-if="movie.original_title && movie.original_title !== movie.title"
+            depth="3"
+            style="display: block; margin-bottom: 12px"
+          >
             {{ movie.original_title }}
           </NText>
 
@@ -168,7 +190,13 @@ function getActorThumb(thumb: string): string {
           <!-- Genres -->
           <div v-if="movie.genres.length > 0" style="margin-bottom: 12px">
             <NText strong style="margin-right: 8px">类型:</NText>
-            <NTag v-for="g in movie.genres" :key="g.id" size="small" type="info" style="margin: 2px">
+            <NTag
+              v-for="g in movie.genres"
+              :key="g.id"
+              size="small"
+              type="info"
+              style="margin: 2px"
+            >
               {{ g.name }}
             </NTag>
           </div>
@@ -188,7 +216,7 @@ function getActorThumb(thumb: string): string {
               {{ t.name }}
             </NTag>
             <NSelect
-              :options="availableTags.map(t => ({ label: t.name, value: t.id }))"
+              :options="availableTags.map((t) => ({ label: t.name, value: t.id }))"
               placeholder="添加标签"
               filterable
               size="small"
@@ -219,12 +247,7 @@ function getActorThumb(thumb: string): string {
         <NGrid :x-gap="12" :y-gap="12" cols="3 s:4 m:5 l:6 xl:8" responsive="screen">
           <NGi v-for="actor in movie.actors" :key="actor.id">
             <div style="text-align: center">
-              <NAvatar
-                v-if="actor.thumb"
-                round
-                :size="64"
-                :src="getActorThumb(actor.thumb)"
-              />
+              <NAvatar v-if="actor.thumb" round :size="64" :src="getActorThumb(actor.thumb)" />
               <NAvatar v-else round :size="64">
                 {{ actor.name.charAt(0) }}
               </NAvatar>

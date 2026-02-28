@@ -14,10 +14,11 @@ export function createSchema(db: Database.Database): void {
       runtime INTEGER,
       studio TEXT NOT NULL DEFAULT '',
       director TEXT NOT NULL DEFAULT '',
-      file_path TEXT NOT NULL DEFAULT '',
-      nfo_path TEXT NOT NULL DEFAULT '' UNIQUE,
+      file_path TEXT NOT NULL DEFAULT '' UNIQUE,
+      nfo_path TEXT NOT NULL DEFAULT '',
       poster_path TEXT NOT NULL DEFAULT '',
       fanart_path TEXT NOT NULL DEFAULT '',
+      nfo_imported INTEGER NOT NULL DEFAULT 0,
       is_favorite INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))

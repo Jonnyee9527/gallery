@@ -17,6 +17,23 @@ import {
 import { useSettingsStore } from '@renderer/stores/settingsStore'
 import { useFilterStore } from '@renderer/stores/filterStore'
 
+declare global {
+  interface Window {
+    api: {
+      selectDirectory: () => Promise<string | null>
+      addDirectory: (dir: { path: string; type: 'nfo' | 'video'; label: string }) => Promise<void>
+      removeDirectory: (id: number) => Promise<void>
+      selectFile: () => Promise<string | null>
+      setSetting: (key: string, value: any) => Promise<void>
+      createTag: (name: string) => Promise<void>
+      deleteTag: (id: number) => Promise<void>
+      createCustomField: (name: string, fieldType: string) => Promise<void>
+      deleteCustomField: (id: number) => Promise<void>
+      resetDatabase: () => Promise<void>
+    }
+  }
+}
+
 const settingsStore = useSettingsStore()
 const filterStore = useFilterStore()
 const message = useMessage()
@@ -148,7 +165,9 @@ async function handleResetDb(): Promise<void> {
       <NSpace align="center">
         <NText>{{ settingsStore.externalPlayerPath || '使用系统默认播放器' }}</NText>
         <NButton size="small" @click="selectPlayerPath">选择播放器</NButton>
-        <NButton v-if="settingsStore.externalPlayerPath" size="small" @click="clearPlayerPath">清除</NButton>
+        <NButton v-if="settingsStore.externalPlayerPath" size="small" @click="clearPlayerPath"
+          >清除</NButton
+        >
       </NSpace>
     </NCard>
 
@@ -156,7 +175,7 @@ async function handleResetDb(): Promise<void> {
     <NCard title="自定义标签" style="margin-bottom: 16px">
       <div style="margin-bottom: 8px">
         <NTag
-          v-for="tag in filterStore.tags.filter(t => t.is_custom)"
+          v-for="tag in filterStore.tags.filter((t) => t.is_custom)"
           :key="tag.id"
           closable
           type="success"
@@ -167,7 +186,12 @@ async function handleResetDb(): Promise<void> {
         </NTag>
       </div>
       <NSpace>
-        <NInput v-model:value="newTagName" placeholder="标签名称" size="small" @keydown.enter="createTag" />
+        <NInput
+          v-model:value="newTagName"
+          placeholder="标签名称"
+          size="small"
+          @keydown.enter="createTag"
+        />
         <NButton size="small" type="primary" @click="createTag">创建</NButton>
       </NSpace>
     </NCard>
@@ -187,7 +211,12 @@ async function handleResetDb(): Promise<void> {
       </NList>
       <NSpace>
         <NInput v-model:value="newFieldName" placeholder="字段名称" size="small" />
-        <NSelect v-model:value="newFieldType" :options="fieldTypeOptions" size="small" style="width: 100px" />
+        <NSelect
+          v-model:value="newFieldType"
+          :options="fieldTypeOptions"
+          size="small"
+          style="width: 100px"
+        />
         <NButton size="small" type="primary" @click="createField">添加</NButton>
       </NSpace>
     </NCard>

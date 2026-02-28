@@ -1,4 +1,5 @@
 import { getDatabase } from '../index'
+import path from 'path'
 import type {
   Movie,
   MovieDetail,
@@ -146,29 +147,56 @@ export function deleteMovie(movieId: number): void {
   db.prepare('DELETE FROM movies WHERE id = ?').run(movieId)
 }
 
-export function upsertMovieFromNfo(parsed: NfoParsedMovie, videoPath: string): number {
+export function insertMovieFromVideo(videoPath: string): number {
+  const db = getDatabase()
+  const ext = path.extname(videoPath)
+  const title = path.basename(videoPath, ext)
+
+  const result = db
+    .prepare(`INSERT INTO movies (title, sort_title, file_path) VALUES (?, ?, ?)`)
+    .run(title, title, videoPath)
+
+  return Number(result.lastInsertRowid)
+}
+
+export function getExistingVideoPaths(): Set<string> {
+  const db = getDatabase()
+  const rows = db.prepare("SELECT file_path FROM movies WHERE file_path != ''").all() as {
+    file_path: string
+  }[]
+  return new Set(rows.map((r) => r.file_path))
+}
+
+/** 返回所有视频的 file_path → { id, title, nfoImported } 映射 */
+export function getMoviesWithNfoImported(): Map<
+  string,
+  { id: number; title: string; nfoImported: boolean }
+> {
+  const db = getDatabase()
+  const rows = db
+    .prepare("SELECT id, title, file_path, nfo_imported FROM movies WHERE file_path != ''")
+    .all() as { id: number; title: string; file_path: string; nfo_imported: number }[]
+  const map = new Map<string, { id: number; title: string; nfoImported: boolean }>()
+  for (const r of rows) {
+    map.set(r.file_path, { id: r.id, title: r.title, nfoImported: r.nfo_imported === 1 })
+  }
+  return map
+}
+
+/** 将 NFO 解析数据应用到已有的电影记录 */
+export function applyNfoToMovie(movieId: number, parsed: NfoParsedMovie): void {
   const db = getDatabase()
 
-  const upsertMovie = db.prepare(`
-    INSERT INTO movies (title, original_title, sort_title, year, plot, rating_nfo, runtime, studio, director, file_path, nfo_path, poster_path, fanart_path)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(nfo_path) DO UPDATE SET
-      title = excluded.title,
-      original_title = excluded.original_title,
-      sort_title = excluded.sort_title,
-      year = excluded.year,
-      plot = excluded.plot,
-      rating_nfo = excluded.rating_nfo,
-      runtime = excluded.runtime,
-      studio = excluded.studio,
-      director = excluded.director,
-      file_path = excluded.file_path,
-      poster_path = excluded.poster_path,
-      fanart_path = excluded.fanart_path,
-      updated_at = datetime('now')
-  `)
-
-  const result = upsertMovie.run(
+  db.prepare(
+    `
+    UPDATE movies SET
+      title = ?, original_title = ?, sort_title = ?, year = ?,
+      plot = ?, rating_nfo = ?, runtime = ?, studio = ?, director = ?,
+      nfo_path = ?, poster_path = ?, fanart_path = ?,
+      nfo_imported = 1, updated_at = datetime('now')
+    WHERE id = ?
+  `
+  ).run(
     parsed.title,
     parsed.originalTitle,
     parsed.sortTitle || parsed.title,
@@ -178,24 +206,13 @@ export function upsertMovieFromNfo(parsed: NfoParsedMovie, videoPath: string): n
     parsed.runtime,
     parsed.studio,
     parsed.director,
-    videoPath,
     parsed.nfoPath,
     parsed.posterPath,
-    parsed.fanartPath
+    parsed.fanartPath,
+    movieId
   )
 
-  // Get the movie id (either inserted or existing)
-  let movieId: number
-  if (result.changes > 0 && result.lastInsertRowid) {
-    movieId = Number(result.lastInsertRowid)
-  } else {
-    const existing = db.prepare('SELECT id FROM movies WHERE nfo_path = ?').get(parsed.nfoPath) as
-      | { id: number }
-      | undefined
-    movieId = existing?.id ?? Number(result.lastInsertRowid)
-  }
-
-  // Clear existing relations for update case
+  // Clear existing NFO-sourced relations
   db.prepare('DELETE FROM movie_genres WHERE movie_id = ?').run(movieId)
   db.prepare('DELETE FROM movie_actors WHERE movie_id = ?').run(movieId)
   db.prepare(
@@ -239,12 +256,4 @@ export function upsertMovieFromNfo(parsed: NfoParsedMovie, videoPath: string): n
     const row = getTagId.get(tag) as { id: number }
     insertMovieTag.run(movieId, row.id)
   }
-
-  return movieId
-}
-
-export function getExistingNfoPaths(): Set<string> {
-  const db = getDatabase()
-  const rows = db.prepare('SELECT nfo_path FROM movies').all() as { nfo_path: string }[]
-  return new Set(rows.map((r) => r.nfo_path))
 }

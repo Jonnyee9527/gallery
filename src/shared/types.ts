@@ -16,6 +16,7 @@ export interface Movie {
   nfo_path: string
   poster_path: string
   fanart_path: string
+  nfo_imported: number // 0 = 未导入, 1 = 已导入
   is_favorite: number // 0 or 1
   created_at: string
   updated_at: string
@@ -117,6 +118,22 @@ export interface ScanStats {
   failed: number
 }
 
+/** NFO 导入时，已有 NFO 数据的视频冲突项 */
+export interface NfoConflict {
+  movieId: number
+  title: string
+  filePath: string
+  nfoPath: string
+}
+
+/** NFO 导入结果 */
+export interface NfoImportResult {
+  applied: number
+  skipped: number
+  failed: number
+  conflicts: NfoConflict[]
+}
+
 // ===== NFO Parsed Data =====
 
 export interface NfoParsedMovie {
@@ -152,6 +169,10 @@ export const IPC_CHANNELS = {
   SCAN_START: 'scan:start',
   SCAN_CANCEL: 'scan:cancel',
   SCAN_PROGRESS: 'scan:progress',
+
+  // NFO Import
+  NFO_IMPORT: 'nfo:import',
+  NFO_IMPORT_FORCE: 'nfo:importForce',
 
   // Tags
   TAG_LIST: 'tag:list',

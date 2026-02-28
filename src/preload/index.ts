@@ -10,7 +10,8 @@ import type {
   Directory,
   CustomField,
   ScanProgress,
-  ScanStats
+  ScanStats,
+  NfoImportResult
 } from '../shared/types'
 
 // Type-safe API exposed to renderer
@@ -35,6 +36,11 @@ const api = {
   startScan: (): Promise<ScanStats> => ipcRenderer.invoke(IPC_CHANNELS.SCAN_START),
 
   cancelScan: (): Promise<boolean> => ipcRenderer.invoke(IPC_CHANNELS.SCAN_CANCEL),
+
+  importNfo: (): Promise<NfoImportResult> => ipcRenderer.invoke(IPC_CHANNELS.NFO_IMPORT),
+
+  importNfoForce: (movieIds: number[]): Promise<NfoImportResult> =>
+    ipcRenderer.invoke(IPC_CHANNELS.NFO_IMPORT_FORCE, movieIds),
 
   onScanProgress: (callback: (progress: ScanProgress) => void): (() => void) => {
     const handler = (_event: Electron.IpcRendererEvent, progress: ScanProgress): void =>
