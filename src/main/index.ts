@@ -1,13 +1,33 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, shell, BrowserWindow, protocol, net } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { getDatabase, closeDatabase } from './database/index'
+import { registerMovieHandlers } from './ipc/movieHandlers'
+import { registerScanHandlers } from './ipc/scanHandlers'
+import { registerTagHandlers } from './ipc/tagHandlers'
+import { registerSettingsHandlers } from './ipc/settingsHandlers'
+import { registerFileHandlers } from './ipc/fileHandlers'
+import { pathToFileURL } from 'url'
+
+// Register media:// protocol for loading local images
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'media',
+    privileges: {
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: true,
+      stream: true
+    }
+  }
+])
 
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width: 900,
-    height: 670,
+    width: 1400,
+    height: 900,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
@@ -42,15 +62,28 @@ app.whenReady().then(() => {
   // Set app user model id for windows
   electronApp.setAppUserModelId('com.electron')
 
+  // Register media:// protocol handler
+  protocol.handle('media', (request) => {
+    const filePath = decodeURIComponent(request.url.replace('media://', ''))
+    return net.fetch(pathToFileURL(filePath).href)
+  })
+
+  // Initialize database
+  getDatabase()
+
+  // Register IPC handlers
+  registerMovieHandlers()
+  registerScanHandlers()
+  registerTagHandlers()
+  registerSettingsHandlers()
+  registerFileHandlers()
+
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils
   app.on('browser-window-created', (_, window) => {
     optimizer.watchWindowShortcuts(window)
   })
-
-  // IPC test
-  ipcMain.on('ping', () => console.log('pong'))
 
   createWindow()
 
@@ -65,6 +98,7 @@ app.whenReady().then(() => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
+  closeDatabase()
   if (process.platform !== 'darwin') {
     app.quit()
   }
